@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Notes</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <style media="screen">
+            .note, #new-note{
+                height: 175px;
+                width: 150px;
+                border: 1px solid black;
+                margin: 10px;
+                background-color: #ffff83;
+            }
+            textarea, input{
+                border: none;
+                resize: none;
+                background-color: transparent;
+                outline: none;
+            }
+            textarea{
+                width: 95%;
+                height: 90%;
+            }
+            a{
+                text-decoration: none;
+            }
+            #all-notes *{
+                display: inline-block;
+            }
+            input[type=submit]{
+                width: 100%;
+                background-color: yellow;
+                border-top: 1px grey solid;
+                border-bottom: 1px grey solid;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="new-note">
+            <form action="/create" method="post">
+                {% csrf_token %}
+                <input type="text" name="title" placeholder="Enter title here">
+                <hr>
+                <textarea name="description" rows="8" cols="20" placeholder="Enter description here.."></textarea>
+                <input type="submit" value="Add Note">
+            </form>
+        </div>
+        <div id="item-selector">
+            <label for="items">Select number of notes shown: </label>
+            <select name='items'>
+                <option value="1">1</option>
+                <option selected='selected' value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+            </select>
+        </div>
+        <div id="page-selector">
+            {% for i in pages %}
+                <a href="">{{forloop.counter}}</a>
+            {% endfor %}
+        </div>
+        <div id="all-notes">
+            {% for note in notes %}
+                <div class="note">
+                    <form action="/update/{{note.id}}" method="post">
+                        {% csrf_token %}
+                        <input type="text" name="title" value='{{note.title}}'>
+                        <a class='delete' href="delete/{{note.id}}">X</a>
+                        <textarea name="description" rows="12" cols="20">{{note.description}}</textarea>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+        <script type="text/javascript">
+            var page = 1;
+            var numberNotes = 5;
+
+            $(document).on('submit', '#new-note form', function(e) {
+                e.preventDefault();
+                var form = $(this)[0];
+                $.post(this.action, $(this).serialize(), function(){
+                    form.reset();
+                    getPages();
+                });
+            });
+
+            $(document).on('focusout', '.note form', function() {
+                $.post(this.action, $(this).serialize());
+            });
+
+            $(document).on('click', '.delete', function(e) {
+                e.preventDefault();
+                $(this).parent().parent().remove();
+                $.get(this.href);
+            });
+
+            $(document).on('change', '#item-selector select', function(){
+                page = 1;
+                numberNotes = this.value;
+                getPages();
+            });
+
+            $(document).on('click', '#page-selector a', function(e){
+                e.preventDefault();
+                page = $(this).html();
+                getPages();
+            });
+
+            function getPages(){
+                $.get(`pages/${numberNotes}/${page}`, function(response){
+                    $('#all-notes').html($(response)[15])
+                    $('#page-selector').html($(response)[13])
+                });
+            }
+        </script>
+    </body>
+</html>
